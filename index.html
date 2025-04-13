@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Power Consumption Monitor</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="scripts.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Power Consumption Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="scripts.js" defer></script>
+  </head>
 <body>
 
+  <!-- Login Page -->
   <div id="loginPage">
     <h2>Power Monitor Login</h2>
     <label for="uniqueID">Plant ID:</label>
@@ -23,66 +24,61 @@
     <p id="loginMessage"></p>
   </div>
 
+  <!-- Main Menu -->
   <div id="menuPage" style="display:none;">
-    <h2>Power Monitor</h2>
+    <h2>Welcome to Power Monitor</h2>
     <button id="btnPlantInfo">Plant Info</button>
-    <button id="btnRecords">Records</button>
-    <button id="btnGraph">Graph</button>
-    <button id="btnAdvice">Advice</button>
-    <button id="btnSync">Sync</button>
+    <button id="btnRecords">View Records</button>
+    <button id="btnGraph">Usage Graph</button>
+    <button id="btnAdvice">Usage Advice</button>
   </div>
 
   <!-- Plant Info Page -->
-<div id="plantInfoPage" style="display:none;">
-  <h2>Plant Information</h2>
+  <div id="plantInfoPage" style="display:none;">
+    <h2>Plant Information</h2>
+    <label for="plantName">Plant Name:</label>
+    <input type="text" id="plantName"><br>
+    <label for="location">Location:</label>
+    <input type="text" id="location"><br>
+    <label for="capacity">Capacity (MW):</label>
+    <input type="number" id="capacity"><br>
+    <button id="btnSavePlant">Save Plant Info</button>
+    <button id="btnBackFromPlant">Back</button>
+  </div>
 
-  <label for="plantName">Plant Name:</label>
-  <input type="text" id="plantName"><br>
+  <!-- Records Page -->
+  <div id="recordsPage" style="display:none;">
+    <h2>Power Usage Records</h2>
+    <label for="recordDate">Date:</label>
+    <input type="date" id="recordDate"><br>
+    <label for="powerUsage">Usage (kWh):</label>
+    <input type="number" id="powerUsage"><br>
+    <button id="btnSaveRecord">Save Record</button>
 
-  <label for="location">Location:</label>
-  <input type="text" id="location"><br>
+    <h3>Saved Records:</h3>
+    <table border="1">
+      <thead>
+        <tr><th>Date</th><th>Usage</th><th>Delete</th></tr>
+      </thead>
+      <tbody id="recordsTable"></tbody>
+    </table>
 
-  <label for="capacity">Capacity (MW):</label>
-  <input type="number" id="capacity"><br>
+    <button id="btnBackFromRecords">Back</button>
+  </div>
 
-  <button id="btnSavePlant">Save Plant Info</button>
-</div>
+  <!-- Graph Page -->
+  <div id="graphPage" style="display:none;">
+    <h2>Power Usage Graph</h2>
+    <canvas id="powerChart" width="400" height="200"></canvas>
+    <button id="btnBackFromGraph">Back</button>
+  </div>
 
-<!-- Records Page -->
-<div id="recordsPage" style="display:none;">
-  <h2>Power Records</h2>
-
-  <label for="recordDate">Date:</label>
-  <input type="date" id="recordDate"><br>
-
-  <label for="powerUsage">Power Usage (kWh):</label>
-  <input type="number" id="powerUsage"><br>
-
-  <button id="btnSaveRecord">Save Record</button>
-
-  <h3>Saved Records:</h3>
-  <table border="1">
-    <thead>
-      <tr><th>Date</th><th>Usage (kWh)</th><th>Delete</th></tr>
-    </thead>
-    <tbody id="recordsTable"></tbody>
-  </table>
-</div>
-
-<!-- Graph Page -->
-<div id="graphPage" style="display:none;">
-  <h2>Power Usage Graph</h2>
-  <canvas id="powerChart" width="400" height="200"></canvas>
-  <br>
-  <button id="btnBackFromGraph">Back</button>
-</div>
-
-<!-- Advice Page -->
-<div id="advicePage" style="display:none;">
-  <h2>Usage Advice</h2>
-  <p id="adviceContent"></p>
-  <button id="btnBackFromAdvice">Back to Menu</button>
-</div>
+  <!-- Advice Page -->
+  <div id="advicePage" style="display:none;">
+    <h2>Efficiency Advice</h2>
+    <p id="adviceContent"></p>
+    <button id="btnBackFromAdvice">Back to Menu</button>
+  </div>
 
 </body>
 </html>

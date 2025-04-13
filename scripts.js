@@ -1,186 +1,242 @@
-$(document).ready(function () {
-    const defaultPassword = "1234";
+document.addEventListener("DOMContentLoaded", function () {
+  let currentPlantId = "";
+  const API_BASE = "http://localhost:3000";
 
-// Save record
-$("#btnSaveRecord").click(function () {
-    const record = {
-      date: $("#recordDate").val(),
-      usage: parseFloat($("#powerUsage").val())
-    };
-  
-    let records = JSON.parse(localStorage.getItem("powerRecords")) || [];
-    records.push(record);
-    localStorage.setItem("powerRecords", JSON.stringify(records));
-    alert("Record saved!");
-    renderRecords();
-  });
-  
-  // Load records when records page is shown
-  $("#recordsPage").on("pageshow", renderRecords);
-  
-  // Display records in table
-  function renderRecords() {
-    const records = JSON.parse(localStorage.getItem("powerRecords")) || [];
-    const table = $("#recordsTable");
-    table.empty();
-  
-    records.forEach((rec, index) => {
-      const row = `<tr>
-        <td>${rec.date}</td>
-        <td>${rec.usage}</td>
-        <td><button onclick="deleteRecord(${index})">Delete</button></td>
-      </tr>`;
-      table.append(row);
+  function showPage(pageId) {
+    const pages = ["loginPage", "menuPage", "plantInfoPage", "recordsPage", "graphPage", "advicePage"];
+    pages.forEach(id => {
+      const page = document.getElementById(id);
+      if (page) {
+        page.style.display = (id === pageId) ? "block" : "none";
+      }
     });
   }
-  
-  // Delete record
-  function deleteRecord(index) {
-    let records = JSON.parse(localStorage.getItem("powerRecords")) || [];
-    records.splice(index, 1);
-    localStorage.setItem("powerRecords", JSON.stringify(records));
-    renderRecords();
-  }    
-  
-  let powerChart; // global chart reference
 
-  $("#btnGraph").click(function () {
-      $("#menuPage").hide();
-      $("#graphPage").show();
-  
-      const records = JSON.parse(localStorage.getItem("powerRecords")) || [];
-      const dates = records.map(r => r.date);
-      const usage = records.map(r => r.usage);
-  
-      if (powerChart) {
-          powerChart.destroy();
-      }
-  
-      const ctx = document.getElementById("powerChart").getContext("2d");
-      powerChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-              labels: dates,
-              datasets: [{
-                  label: 'Power Usage (kWh)',
-                  data: usage,
-                  borderColor: 'blue',
-                  fill: false
-              }]
-          }
+  // Login
+  document.getElementById("btnLogin").addEventListener("click", () => {
+    const plantId = document.getElementById("uniqueID").value.trim();
+    const passcode = document.getElementById("passcode").value.trim();
+    const msg = document.getElementById("loginMessage");
+
+    if (!plantId || !passcode) {
+      msg.textContent = "Please enter both Plant ID and Passcode.";
+      msg.style.color = "red";
+      return;
+    }
+
+    fetch(`${API_BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plantId, passcode })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          currentPlantId = plantId;
+          msg.textContent = "Login successful!";
+          msg.style.color = "green";
+          showPage("menuPage");
+        } else {
+          msg.textContent = data.message || "Invalid ID or Passcode.";
+          msg.style.color = "red";
+        }
+      })
+      .catch(() => {
+        msg.textContent = "Login failed. Please try again.";
+        msg.style.color = "red";
       });
   });
-  
-  $("#btnBackFromGraph").click(function () {
-      $("#graphPage").hide();
-      $("#menuPage").show();
-  });
-  
-  // Show advice
-$("#btnAdvice").click(function () {
-    const records = JSON.parse(localStorage.getItem("powerRecords")) || [];
-    const usageValues = records.map(r => r.usage);
-    
-    let advice = "No records found.";
 
-    if (usageValues.length > 0) {
-        const avgUsage = usageValues.reduce((a, b) => a + b, 0) / usageValues.length;
-        if (avgUsage < 100) {
-            advice = "Power usage is efficient.";
-        } else if (avgUsage < 500) {
-            advice = "Power usage is moderate.";
-        } else {
-            advice = "Consider reducing power usage.";
+  // Register
+  document.getElementById("btnCreateID").addEventListener("click", () => {
+    const plantId = document.getElementById("uniqueID").value.trim();
+    const passcode = document.getElementById("passcode").value.trim();
+    const msg = document.getElementById("loginMessage");
+
+    if (!plantId || !passcode) {
+      msg.textContent = "Please enter both Plant ID and Passcode.";
+      msg.style.color = "red";
+      return;
+    }
+
+    fetch(`${API_BASE}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plantId, passcode })
+    })
+      .then(res => res.json())
+      .then(data => {
+        msg.textContent = data.success
+          ? "New ID created! You can now log in."
+          : data.message || "Failed to create ID.";
+        msg.style.color = data.success ? "green" : "red";
+      })
+      .catch(() => {
+        msg.textContent = "Something went wrong. Try again.";
+        msg.style.color = "red";
+      });
+  });
+
+  // Save Plant Info
+  document.getElementById("btnSavePlant").addEventListener("click", () => {
+    const name = document.getElementById("plantName").value.trim();
+    const location = document.getElementById("location").value.trim();
+    const capacity = parseFloat(document.getElementById("capacity").value.trim());
+
+    if (!name || !location || isNaN(capacity)) {
+      alert("Please fill out all plant information fields.");
+      return;
+    }
+
+    fetch(`${API_BASE}/api/savePlantInfo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plantId: currentPlantId, name, location, capacity })
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.success ? "Plant information saved." : "Failed to save plant information.");
+        showPage("menuPage");
+      });
+  });
+
+  // Save Power Record
+  document.getElementById("btnSaveRecord").addEventListener("click", () => {
+    const date = document.getElementById("recordDate").value;
+    const usage = parseFloat(document.getElementById("powerUsage").value.trim());
+
+    if (!date || isNaN(usage)) {
+      alert("Please enter both date and power usage.");
+      return;
+    }
+
+    fetch(`${API_BASE}/api/saveRecord`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plantId: currentPlantId, date, usage })
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.success ? "Record saved successfully." : "Failed to save record.");
+        showPage("menuPage");
+      });
+  });
+
+  // Load Plant Info
+  document.getElementById("btnPlantInfo").addEventListener("click", () => {
+    fetch(`${API_BASE}/api/getPlantInfo?plantId=${currentPlantId}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("plantName").value = data.name || "";
+        document.getElementById("location").value = data.location || "";
+        document.getElementById("capacity").value = data.capacity || "";
+        showPage("plantInfoPage");
+      });
+  });
+
+  // Load Records
+  document.getElementById("btnRecords").addEventListener("click", () => {
+    fetch(`${API_BASE}/api/getRecords?plantId=${currentPlantId}`)
+      .then(res => res.json())
+      .then(data => {
+        displayRecords(data.records);
+        showPage("recordsPage");
+      });
+  });
+
+  // Load Graph
+  document.getElementById("btnGraph").addEventListener("click", () => {
+    fetch(`${API_BASE}/api/getRecords?plantId=${currentPlantId}`)
+      .then(res => res.json())
+      .then(data => {
+        renderGraph(data.records);
+        showPage("graphPage");
+      });
+  });
+
+  // Load Advice
+  document.getElementById("btnAdvice").addEventListener("click", () => {
+    fetch(`${API_BASE}/api/getRecords?plantId=${currentPlantId}`)
+      .then(res => res.json())
+      .then(data => {
+        generateAdvice(data.records);
+        showPage("advicePage");
+      });
+  });
+
+  // Back buttons
+  document.getElementById("btnBackFromPlant").addEventListener("click", () => showPage("menuPage"));
+  document.getElementById("btnBackFromRecords").addEventListener("click", () => showPage("menuPage"));
+  document.getElementById("btnBackFromGraph").addEventListener("click", () => showPage("menuPage"));
+  document.getElementById("btnBackFromAdvice").addEventListener("click", () => showPage("menuPage"));
+
+  // Display Records
+  function displayRecords(records) {
+    const table = document.getElementById("recordsTable");
+    table.innerHTML = "";
+
+    records.forEach(record => {
+      const row = document.createElement("tr");
+
+      const dateCell = document.createElement("td");
+      dateCell.textContent = record.date;
+
+      const usageCell = document.createElement("td");
+      usageCell.textContent = record.usage;
+
+      const deleteCell = document.createElement("td");
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.addEventListener("click", () => {
+        row.remove(); // purely frontend demo
+      });
+      deleteCell.appendChild(deleteBtn);
+
+      row.appendChild(dateCell);
+      row.appendChild(usageCell);
+      row.appendChild(deleteCell);
+
+      table.appendChild(row);
+    });
+  }
+
+  // Render Graph
+  function renderGraph(records) {
+    const ctx = document.getElementById("powerChart").getContext("2d");
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: records.map(r => r.date),
+        datasets: [{
+          label: "Power Usage (kWh)",
+          data: records.map(r => r.usage),
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
         }
-    }
-
-    $("#adviceContent").text(advice);
-    $("#menuPage").hide();
-    $("#advicePage").show();
-});
-
-// Back from advice
-$("#btnBackFromAdvice").click(function () {
-    $("#advicePage").hide();
-    $("#menuPage").show();
-});
-
-    // Save Plant Info
-$("#btnSavePlant").click(function () {
-    const plantInfo = {
-      name: $("#plantName").val().trim(),
-      location: $("#location").val().trim(),
-      capacity: $("#capacity").val().trim()
-    };
-  
-    localStorage.setItem("plantInfo", JSON.stringify(plantInfo));
-    alert("Plant information saved!");
-  });
-  
-  // Auto-load saved plant info
-  $("#plantInfoPage").on("pageshow", function () {
-    const saved = JSON.parse(localStorage.getItem("plantInfo"));
-    if (saved) {
-      $("#plantName").val(saved.name);
-      $("#location").val(saved.location);
-      $("#capacity").val(saved.capacity);
-    }
-  });
-  
-    // Login
-    $("#btnLogin").click(function () {
-      const enteredID = $("#uniqueID").val().trim();
-      const enteredPass = $("#passcode").val().trim();
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-  
-      if (storedUser && storedUser.id === enteredID && storedUser.passcode === enteredPass) {
-        sessionStorage.setItem("user", JSON.stringify(storedUser));
-        $("#loginMessage").text("");
-        $("#loginPage").hide();
-        $("#menuPage").show();
-      } else {
-        $("#loginMessage").text("Login failed. Check your credentials.");
       }
     });
-  
-    // Create New ID
-    $("#btnCreateID").click(function () {
-      const newID = $("#uniqueID").val().trim();
-      const newPass = $("#passcode").val().trim();
-  
-      if (!newID || !newPass) {
-        alert("Both ID and passcode are required.");
-        return;
-      }
-  
-      const newUser = { id: newID, passcode: newPass };
-      localStorage.setItem("user", JSON.stringify(newUser));
-      alert("New ID created. You can now login.");
-    });
-  });
+  }
 
-  const SERVER_URL = "http://127.0.0.1:3000"; // Simulated server
+  // Generate Advice
+  function generateAdvice(records) {
+    const avg = records.length
+      ? records.reduce((sum, r) => sum + r.usage, 0) / records.length
+      : 0;
 
-// Sync records to server
-$("#btnSync").click(function () {
-    const records = JSON.parse(localStorage.getItem("powerRecords")) || [];
-    const plant = JSON.parse(localStorage.getItem("plantInfo")) || null;
+    const msg = avg > 5000
+      ? "High usage! Consider reviewing efficiency."
+      : avg > 2000
+        ? "Moderate usage. You’re doing okay."
+        : "Excellent efficiency! Keep it up.";
 
-    if (records.length === 0 || !plant) {
-        alert("No records or plant info to sync.");
-        return;
-    }
-
-    const requestBody = {
-        plantId: $("#uniqueID").val(),
-        password: $("#passcode").val(),
-        plantInfo: plant,
-        powerUsage: records
-    };
-
-    $.post(SERVER_URL + "/syncPower", requestBody, function (data) {
-        alert("Data synced with server.");
-    }).fail(function (error) {
-        alert("Sync failed: " + error.responseText);
-    });
+    document.getElementById("adviceContent").textContent = msg;
+  }
 });
